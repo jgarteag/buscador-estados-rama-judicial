@@ -35,7 +35,7 @@ for index, row in df.iterrows():
         for found_file in found_files:
             shutil.move(os.path.join(CARPETA_PDF, found_file), os.path.join(CARPETA_RELACION, found_file)) """
     # Escribir la información relevante en un archivo .txt
-    with open(os.path.join(CARPETA_REVISION, f'{date.today()}_revision_JPMGUACHUCAL.txt'), 'a') as txt_file:
+    with open(os.path.join(CARPETA_REVISION, f'{date.today()}_revision_JPMCUMBAL.txt'), 'a') as txt_file:
         if found:
             txt_file.write(f"Se encontró el número {numero} con radicado {radicado} en los archivos: {', '.join(found_files)}\n")
         else:
