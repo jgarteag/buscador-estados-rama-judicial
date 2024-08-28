@@ -1,3 +1,6 @@
 .env
 .pdf
 pdf/
+.venv/
+.env/
+pycache/
