@@ -1,55 +1,54 @@
 import os
+import pymongo
 import pandas as pd
-from pymongo import MongoClient
-from urllib.parse import quote_plus
-from dotenv import load_dotenv
+import certifi
+import getpass
 from datetime import date
 import pdfplumber
+from dotenv import load_dotenv
 
 load_dotenv()
 
-username = quote_plus(os.getenv("MONGO_USERNAME"))
-password = quote_plus(os.getenv("MONGO_PASSWORD"))
+usuario = os.getenv("USER")
+contrasena = os.getenv("PASSWORD")
 
-pdf_folder = os.getenv("JPMCUMBAL_PATH_PDF")
-check_folder = os.getenv("JPMCUMBAL_CHECK_PATH")
+carpeta_raiz = os.path.dirname(os.path.abspath(__file__))
 
-MONGODB_URI = f"mongodb+srv://{username}:{password}@clusterestados.iarfl.mongodb.net/?retryWrites=true&w=majority&appName=ClusterEstados"
+carpeta_pdf = os.path.join(carpeta_raiz, 'pdf')
+carpeta_revision = os.path.join(carpeta_raiz, 'revision')
 
-client = MongoClient(MONGODB_URI)
+cadena_conexion = f"mongodb+srv://{usuario}:{contrasena}@clusterestados.iarfl.mongodb.net/?retryWrites=true&w=majority&appName=ClusterEstados"
 
-db = client["dbestados"]
+cliente = pymongo.MongoClient(cadena_conexion, tlsCAFile=certifi.where())
 
-# COLECCION DB 
-collection = db["JPMCUMBAL"]
+base_datos = cliente.dbestados
 
-data = collection.find()
-data_list = list(data)
-df = pd.DataFrame(data_list)
+nombre_carpeta_raiz = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
 
-for index, row in df.iterrows():
-    numero = row['numero']
-    radicado = row['radicado'] 
-    found = False
-    found_files = []
-    # Iterar sobre cada archivo PDF en la carpeta especificada
-    for filename in os.listdir(pdf_folder):
-        if filename.endswith(".pdf"):
-            # Abrir el archivo y leer su contenido
-            with pdfplumber.open(os.path.join(pdf_folder, filename)) as pdf:
-                content = ""
-                for page in pdf.pages:
-                    content += page.extract_text()
-                # Buscar el número en el contenido del archivo PDF
-                if numero in content:
-                    found = True
-                    found_files.append(filename)
+coleccion = base_datos[nombre_carpeta_raiz]
+
+datos = coleccion.find()
+lista_datos = list(datos)
+df = pd.DataFrame(lista_datos)
+
+for indice, fila in df.iterrows():
+    numero = fila['numero']
+    radicado = fila['radicado'] 
+    encontrado = False
+    archivos_encontrados = []
+    for nombre_archivo in os.listdir(carpeta_pdf):
+        if nombre_archivo.endswith(".pdf"):
+            with pdfplumber.open(os.path.join(carpeta_pdf, nombre_archivo)) as pdf:
+                contenido = ""
+                for pagina in pdf.pages:
+                    contenido += pagina.extract_text()
+                if numero in contenido:
+                    encontrado = True
+                    archivos_encontrados.append(nombre_archivo)
     
-    # Escribir la información relevante en un archivo .txt
-    with open(os.path.join(check_folder, f'{date.today()}_revision.txt'), 'a') as txt_file:
-        if found:
-            txt_file.write(f"Se encontró el numero {numero} con radicado {radicado} en los archivos: {', '.join(found_files)}\n")
+    with open(os.path.join(carpeta_revision, f'{date.today()}_revision.txt'), 'a') as archivo_txt:
+        if encontrado:
+            archivo_txt.write(f"Se encontró el numero {numero} con radicado {radicado} en los archivos: {', '.join(archivos_encontrados)}\n")
         else:
-            txt_file.write(f"No se encontro el número {numero} con radicado {radicado} en ningun archivo.\n")
-        txt_file.write("\n")
-
+            archivo_txt.write(f"No se encontro el número {numero} con radicado {radicado} en ningun archivo.\n")
+        archivo_txt.write("\n")

@@ -4,3 +4,4 @@ pdf/
 .venv/
 .env/
 pycache/
+.DS_Store
