@@ -8,7 +8,6 @@ import pdfplumber
 from dotenv import load_dotenv
 
 load_dotenv()
-#ttts
 
 usuario = os.getenv("USER")
 contrasena = os.getenv("PASSWORD")
