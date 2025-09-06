@@ -4,3 +4,5 @@
 .env/
 pycache/
 .DS_Store
+.csv
+*.xlsx
