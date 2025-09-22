@@ -146,10 +146,24 @@ class JuzgadoManager:
             if resultados:
                 self.file_manager.escribir_resultados(resultados)
                 
-                # Estadísticas
+                # Estadísticas detalladas
                 encontrados = sum(1 for r in resultados if r.encontrado)
+                total = len(resultados)
+                porcentaje = (encontrados / total * 100) if total > 0 else 0
+                
                 logger.info(f"Revisión completa para {self.nombre_juzgado}: "
-                          f"{encontrados}/{len(resultados)} estados encontrados")
+                          f"{encontrados}/{total} estados encontrados ({porcentaje:.1f}%)")
+                
+                # Mostrar resumen de estados encontrados
+                if encontrados > 0:
+                    logger.info(f"✅ Estados encontrados en PDFs:")
+                    for resultado in resultados:
+                        if resultado.encontrado:
+                            archivos = ", ".join(resultado.archivos_encontrados)
+                            logger.info(f"   • {resultado.estado.numero} ({resultado.estado.radicado}) → {archivos}")
+                else:
+                    logger.info("❌ No se encontraron estados en los archivos PDF")
+                    
             else:
                 logger.warning(f"No se generaron resultados para {self.nombre_juzgado}")
                 

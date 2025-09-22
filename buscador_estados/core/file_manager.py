@@ -65,6 +65,7 @@ class FileManager:
     def escribir_resultados(self, resultados: List[ResultadoBusqueda]) -> None:
         """
         Escribe múltiples resultados de búsqueda al archivo.
+        Solo incluye los estados que SÍ fueron encontrados.
         
         Args:
             resultados: Lista de resultados a escribir
@@ -73,6 +74,9 @@ class FileManager:
             logger.warning("No hay resultados para escribir")
             return
         
+        # Filtrar solo los resultados encontrados
+        resultados_encontrados = [r for r in resultados if r.encontrado]
+        
         fecha = resultados[0].fecha_busqueda
         archivo_revision = self.get_archivo_revision(fecha)
         
@@ -80,13 +84,25 @@ class FileManager:
             with open(archivo_revision, 'w', encoding='utf-8') as archivo:
                 archivo.write(f"=== REVISIÓN DEL {fecha} ===\n\n")
                 
-                for resultado in resultados:
-                    archivo.write(str(resultado) + '\n')
-                    archivo.write('\n')
+                if resultados_encontrados:
+                    archivo.write("🎯 ESTADOS ENCONTRADOS:\n\n")
+                    for resultado in resultados_encontrados:
+                        archivo.write(str(resultado) + '\n')
+                        archivo.write('\n')
+                else:
+                    archivo.write("❌ No se encontraron estados en los archivos PDF.\n\n")
                 
-                archivo.write(f"\n=== FIN DE REVISIÓN - {len(resultados)} estados procesados ===\n")
+                # Estadísticas finales
+                total_estados = len(resultados)
+                estados_encontrados = len(resultados_encontrados)
+                porcentaje = (estados_encontrados / total_estados * 100) if total_estados > 0 else 0
+                
+                archivo.write(f"=== ESTADÍSTICAS ===\n")
+                archivo.write(f"Estados encontrados: {estados_encontrados} de {total_estados} ({porcentaje:.1f}%)\n")
+                archivo.write(f"Estados no encontrados: {total_estados - estados_encontrados}\n")
+                archivo.write(f"\n=== FIN DE REVISIÓN ===\n")
             
-            logger.info(f"Escritos {len(resultados)} resultados en {archivo_revision}")
+            logger.info(f"Escritos {estados_encontrados} resultados encontrados de {total_estados} totales en {archivo_revision}")
             
         except Exception as e:
             logger.error(f"Error escribiendo resultados: {e}")
