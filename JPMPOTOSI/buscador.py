@@ -1,54 +1,44 @@
+#!/usr/bin/env python3
+"""
+Buscador para juzgado específico usando el nuevo sistema.
+"""
+
+import sys
 import os
-import pymongo
-import pandas as pd
-import certifi
-import getpass
-from datetime import date
-import pdfplumber
-from dotenv import load_dotenv
 
-load_dotenv()
+# Agregar el directorio del proyecto al path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
-usuario = os.getenv("USER")
-contrasena = os.getenv("PASSWORD")
+from buscador_estados.juzgados.manager import JuzgadoManager
+from buscador_estados.utils.logger import setup_logger
 
-carpeta_raiz = os.path.dirname(os.path.abspath(__file__))
+# Obtener el nombre del juzgado desde el nombre de la carpeta
+nombre_juzgado = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
 
-carpeta_pdf = os.path.join(carpeta_raiz, 'pdf')
-carpeta_revision = os.path.join(carpeta_raiz, 'revision')
+logger = setup_logger(f'buscador_{nombre_juzgado}')
 
-cadena_conexion = f"mongodb+srv://{usuario}:{contrasena}@clusterestados.iarfl.mongodb.net/?retryWrites=true&w=majority&appName=ClusterEstados"
 
-cliente = pymongo.MongoClient(cadena_conexion, tlsCAFile=certifi.where())
+def main():
+    """Función principal del buscador."""
+    try:
+        logger.info(f"Iniciando búsqueda para {nombre_juzgado}")
+        
+        manager = JuzgadoManager(nombre_juzgado)
+        manager.ejecutar_revision_completa()
+        
+        logger.info(f"Búsqueda completada para {nombre_juzgado}")
+        print(f"✓ Revisión completada para {nombre_juzgado}")
+        print(f"  Resultados guardados en: {manager.config.carpeta_revision}")
+        
+        return 0
+        
+    except Exception as e:
+        logger.error(f"Error en búsqueda para {nombre_juzgado}: {e}")
+        print(f"✗ Error en la búsqueda: {e}")
+        return 1
 
-base_datos = cliente.dbestados
 
-nombre_carpeta_raiz = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
-
-coleccion = base_datos[nombre_carpeta_raiz]
-
-datos = coleccion.find()
-lista_datos = list(datos)
-df = pd.DataFrame(lista_datos)
-
-for indice, fila in df.iterrows():
-    numero = fila['numero']
-    radicado = fila['radicado'] 
-    encontrado = False
-    archivos_encontrados = []
-    for nombre_archivo in os.listdir(carpeta_pdf):
-        if nombre_archivo.endswith(".pdf"):
-            with pdfplumber.open(os.path.join(carpeta_pdf, nombre_archivo)) as pdf:
-                contenido = ""
-                for pagina in pdf.pages:
-                    contenido += pagina.extract_text()
-                if numero in contenido:
-                    encontrado = True
-                    archivos_encontrados.append(nombre_archivo)
-    
-    with open(os.path.join(carpeta_revision, f'{date.today()}_revision.txt'), 'a') as archivo_txt:
-        if encontrado:
-            archivo_txt.write(f"Se encontró el numero {numero} con radicado {radicado} en los archivos: {', '.join(archivos_encontrados)}\n")
-        else:
-            archivo_txt.write(f"No se encontro el número {numero} con radicado {radicado} en ningun archivo.\n")
-        archivo_txt.write("\n")
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)

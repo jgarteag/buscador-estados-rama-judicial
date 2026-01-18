@@ -10,3 +10,7 @@ MarkupSafe==2.1.5
 requests==2.32.3
 urllib3==2.2.3
 Werkzeug==3.0.4
+pdfplumber==0.11.4
+pymongo==4.10.1
+pandas==2.2.3
+python-dotenv==1.0.1
